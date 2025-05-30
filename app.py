@@ -5,11 +5,11 @@ from datetime import datetime, timezone, timedelta
 
 app = Flask(__name__)
 
-# Substitua pela sua chave da API do OpenWeatherMap
+
 API_KEY = ("0153a042112f9529edbc2bad5372a198")
 
 def converter_timestamp(timestamp, offset_segundos):
-    # Cria um objeto datetime em UTC e aplica o offset do fuso horário
+   
     dt = datetime.fromtimestamp(timestamp, tz=timezone.utc) + timedelta(seconds=offset_segundos)
     return dt.strftime('%H:%M')
 
@@ -23,7 +23,7 @@ def obter_clima():
     lat = request.args.get("lat")
     lon = request.args.get("lon")
 
-    # Se temos coordenadas, usamos elas em vez do nome da cidade
+   
     if lat and lon:
         link = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={API_KEY}&lang=pt_br&units=metric"
     elif cidade:
@@ -74,8 +74,7 @@ def geocode():
     
     if not lat or not lon:
         return jsonify({"erro": "Informe latitude e longitude"}), 400
-    
-    # Usamos a API de geocodificação reversa do OpenWeatherMap para obter o nome do local
+   
     link = f"https://api.openweathermap.org/geo/1.0/reverse?lat={lat}&lon={lon}&limit=1&appid={API_KEY}"
     
     try:

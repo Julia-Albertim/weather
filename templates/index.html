@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clima Interativo</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  
+  <!-- Font Inter -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(to right, #e0eafc, #cfdef3);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 35px 45px;
+      border-radius: 16px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      width: 90%;
+      max-width: 800px;
+      box-sizing: border-box;
+      transition: box-shadow 0.3s ease-in-out;
+    }
+
+    h1 {
+      color: #2d3748;
+      text-align: center;
+      margin-bottom: 25px;
+      font-weight: 600;
+    }
+
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      margin-bottom: 25px;
+    }
+
+    .search-container {
+      display: flex;
+      gap: 10px;
+    }
+
+    label {
+      font-weight: 500;
+      color: #4a5568;
+      font-size: 0.95rem;
+    }
+
+    input[type="text"] {
+      padding: 14px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      font-size: 1rem;
+      color: #2d3748;
+      flex-grow: 1;
+      transition: border-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+
+    input[type="text"]:focus {
+      border-color: #a8c7fa;
+      box-shadow: 0 0 0 3px rgba(81, 153, 255, 0.15);
+      outline: none;
+    }
+
+    button {
+      padding: 14px 16px;
+      background-color: #5199FF;
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease-in-out;
+    }
+
+    button:hover {
+      background-color: #3a86f8;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(81, 153, 255, 0.2);
+    }
+
+    button:active {
+      transform: translateY(0);
+      box-shadow: none;
+    }
+
+    .map-container {
+      margin-top: 25px;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+      border: 1px solid #e2e8f0;
+    }
+
+    #map {
+      height: 400px;
+      width: 100%;
+      border-radius: 10px;
+    }
+
+    #resultado {
+      margin-top: 25px;
+      padding: 25px;
+      background-color: #f7fafc;
+      border-radius: 10px;
+      border-top: 1px solid #e2e8f0;
+      display: none;
+    }
+
+    #resultado.active {
+      display: block;
+      animation: fadeIn 0.5s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #resultado h2 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: #2d3748;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .weather-icon {
+      width: 50px;
+      height: 50px;
+    }
+
+    .clima-principal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .temperatura {
+      font-size: 3rem;
+      font-weight: 600;
+      color: #2d3748;
+      margin: 0;
+    }
+
+    .descricao {
+      text-transform: capitalize;
+      color: #4a5568;
+      font-size: 1.1rem;
+    }
+
+    .clima-detalhes {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 15px;
+    }
+
+    .detalhe {
+      padding: 15px;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    }
+
+    .detalhe-titulo {
+      font-size: 0.85rem;
+      color: #718096;
+      margin-bottom: 5px;
+    }
+
+    .detalhe-valor {
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: #2d3748;
+    }
+
+    .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .loading.active {
+      display: block;
+    }
+
+    .spinner {
+      border: 4px solid rgba(0, 0, 0, 0.1);
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border-left-color: #5199FF;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      color: #e53e3e;
+      background-color: #fff5f5;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .error-message.active {
+      display: block;
+    }
+
+    .map-instructions {
+      text-align: center;
+      color: #4a5568;
+      margin: 10px 0 20px;
+      font-size: 0.95rem;
+    }
+
+    .map-marker-popup {
+      font-family: 'Inter', sans-serif;
+    }
+
+    /* Responsividade */
+    @media (max-width: 600px) {
+      body {
+        padding: 15px;
+      }
+      .container {
+        padding: 25px 20px;
+        width: 95%;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .search-container {
+        flex-direction: column;
+      }
+
+      input[type="text"],
+      button {
+        font-size: 0.95rem;
+        padding: 12px 14px;
+      }
+
+      #resultado {
+        padding: 20px;
+      }
+
+      #map {
+        height: 300px;
+      }
+
+      .clima-principal {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+      }
+
+      .clima-detalhes {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Clima Interativo</h1>
+    
+    <form id="clima-form">
+      <label for="cidade">Pesquisar cidade:</label>
+      <div class="search-container">
+        <input type="text" id="cidade" name="cidade" placeholder="Digite o nome da cidade..." required>
+        <button type="submit">Buscar</button>
+      </div>
+    </form>
+
+    <p class="map-instructions">Ou clique em qualquer ponto do mapa para obter o clima local</p>
+    
+    <div class="map-container">
+      <div id="map"></div>
+    </div>
+
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Carregando informações do clima...</p>
+    </div>
+
+    <div class="error-message" id="error-message"></div>
+
+    <div id="resultado">
+      <div class="clima-principal">
+        <div>
+          <h2>
+            <span id="cidade-nome"></span>
+            <img id="clima-icone" class="weather-icon" src="" alt="Ícone do clima">
+          </h2>
+          <p class="descricao" id="clima-descricao"></p>
+        </div>
+        <div>
+          <p class="temperatura"><span id="temperatura"></span>°C</p>
+          <p>Sensação: <span id="sensacao"></span>°C</p>
+        </div>
+      </div>
+
+      <div class="clima-detalhes">
+        <div class="detalhe">
+          <div class="detalhe-titulo">Temperatura Mín/Máx</div>
+          <div class="detalhe-valor"><span id="temp-min"></span>°C / <span id="temp-max"></span>°C</div>
+        </div>
+        <div class="detalhe">
+          <div class="detalhe-titulo">Umidade</div>
+          <div class="detalhe-valor"><span id="umidade"></span>%</div>
+        </div>
+        <div class="detalhe">
+          <div class="detalhe-titulo">Vento</div>
+          <div class="detalhe-valor"><span id="vento"></span> m/s</div>
+        </div>
+        <div class="detalhe">
+          <div class="detalhe-titulo">Nascer do Sol</div>
+          <div class="detalhe-valor"><span id="nascer-sol"></span></div>
+        </div>
+        <div class="detalhe">
+          <div class="detalhe-titulo">Pôr do Sol</div>
+          <div class="detalhe-valor"><span id="por-sol"></span></div>
+        </div>
+        <div class="detalhe">
+          <div class="detalhe-titulo">Visibilidade</div>
+          <div class="detalhe-valor"><span id="visibilidade"></span> km</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+  <script>
+    // Inicialização do mapa
+    const map = L.map("map").setView([-23.55052, -46.633308], 5);
+    let currentMarker = null;
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "© OpenStreetMap contributors",
+    }).addTo(map);
+
+    // Elementos DOM
+    const climaForm = document.getElementById('clima-form');
+    const cidadeInput = document.getElementById('cidade');
+    const resultadoDiv = document.getElementById('resultado');
+    const loadingDiv = document.getElementById('loading');
+    const errorDiv = document.getElementById('error-message');
+
+    // Função para mostrar loading
+    function showLoading() {
+      loadingDiv.classList.add('active');
+      resultadoDiv.classList.remove('active');
+      errorDiv.classList.remove('active');
+    }
+
+    // Função para esconder loading
+    function hideLoading() {
+      loadingDiv.classList.remove('active');
+    }
+
+    // Função para mostrar erro
+    function showError(message) {
+      errorDiv.textContent = message;
+      errorDiv.classList.add('active');
+      hideLoading();
+    }
+
+    // Função para buscar clima por cidade
+    async function buscarClimaPorCidade(cidade) {
+      showLoading();
+      
+      try {
+        const response = await fetch(`/clima?cidade=${encodeURIComponent(cidade)}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.erro || 'Erro ao buscar dados do clima');
+        }
+        
+        const data = await response.json();
+        exibirDadosClima(data);
+        
+        // Atualiza o mapa com a localização
+        atualizarMapa(data.latitude, data.longitude, data.cidade);
+        
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // Função para buscar clima por coordenadas
+    async function buscarClimaPorCoordenadas(lat, lon) {
+      showLoading();
+      
+      try {
+        const response = await fetch(`/clima?lat=${lat}&lon=${lon}`);
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.erro || 'Erro ao buscar dados do clima');
+        }
+        
+        const data = await response.json();
+        exibirDadosClima(data);
+        
+        // Atualiza o mapa com a localização
+        atualizarMapa(data.latitude, data.longitude, data.cidade);
+        
+      } catch (error) {
+        showError(error.message);
+      } finally {
+        hideLoading();
+      }
+    }
+
+    // Função para exibir os dados do clima na interface
+    function exibirDadosClima(data) {
+      document.getElementById('cidade-nome').textContent = `${data.cidade}, ${data.pais}`;
+      document.getElementById('clima-icone').src = `https://openweathermap.org/img/wn/${data.icone}@2x.png`;
+      document.getElementById('clima-descricao').textContent = data.descricao;
+      document.getElementById('temperatura').textContent = Math.round(data.temperatura);
+      document.getElementById('sensacao').textContent = Math.round(data.sensacao);
+      document.getElementById('temp-min').textContent = Math.round(data.temp_min);
+      document.getElementById('temp-max').textContent = Math.round(data.temp_max);
+      document.getElementById('umidade').textContent = data.umidade;
+      document.getElementById('vento').textContent = data.vento;
+      document.getElementById('nascer-sol').textContent = data.nascer_do_sol;
+      document.getElementById('por-sol').textContent = data.por_do_sol;
+      document.getElementById('visibilidade').textContent = (data.visibilidade / 1000).toFixed(1);
+      
+      resultadoDiv.classList.add('active');
+    }
+
+    // Função para atualizar o mapa com um marcador
+    function atualizarMapa(lat, lon, nome) {
+      // Remove o marcador anterior, se existir
+      if (currentMarker) {
+        map.removeLayer(currentMarker);
+      }
+      
+      // Adiciona o novo marcador
+      currentMarker = L.marker([lat, lon]).addTo(map)
+        .bindPopup(`<div class="map-marker-popup"><b>${nome}</b></div>`)
+        .openPopup();
+      
+      // Centraliza o mapa na nova localização
+      map.setView([lat, lon], 10);
+    }
+
+    // Event listener para o formulário
+    climaForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const cidade = cidadeInput.value.trim();
+      
+      if (cidade) {
+        buscarClimaPorCidade(cidade);
+      }
+    });
+
+    // Event listener para cliques no mapa
+    map.on('click', function(e) {
+      const { lat, lng } = e.latlng;
+      buscarClimaPorCoordenadas(lat, lng);
+    });
+
+    // Inicializa com São Paulo como exemplo
+    buscarClimaPorCidade('São Paulo');
+  </script>
+</body>
+</html>
